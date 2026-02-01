@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikacja Testowa</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- KaTeX dla wyrażeń matematycznych -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+</head>
+<body>
+    <!-- Marked.js dla Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- KaTeX -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <div class="app-container">
+        <!-- Górny pasek nawigacji -->
+        <nav class="navbar">
+            <div class="nav-brand">📝 TestApp</div>
+            <ul class="nav-tabs">
+                <li class="nav-tab active" data-tab="add-test">
+                    <span class="tab-icon">➕</span>
+                    Dodaj test
+                </li>
+                <li class="nav-tab" data-tab="tests">
+                    <span class="tab-icon">📋</span>
+                    Testy
+                </li>
+                <li class="nav-tab" data-tab="results">
+                    <span class="tab-icon">📊</span>
+                    Wyniki
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Główna zawartość -->
+        <main class="main-content">
+            <!-- Sekcja: Dodaj test -->
+            <section id="add-test" class="tab-content active">
+                <div class="section-header">
+                    <h1>Dodaj nowy test</h1>
+                    <p>Utwórz test ręcznie lub zaimportuj z pliku CSV</p>
+                    <div class="storage-info">
+                        💾 Twoje testy i wyniki są automatycznie zapisywane w przeglądarce i nie znikną po zamknięciu aplikacji.
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Informacje o teście</h2>
+                    <div class="form-group">
+                        <label for="test-name">Nazwa testu</label>
+                        <input type="text" id="test-name" placeholder="np. Test z matematyki">
+                    </div>
+                    <div class="form-group">
+                        <label for="test-type">Typ testu</label>
+                        <select id="test-type">
+                            <option value="single">Jednokrotny wybór</option>
+                            <option value="multiple">Wielokrotny wybór</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Import z CSV</h2>
+                    <div class="csv-info">
+                        <h3>Wymagany format CSV:</h3>
+                        <code class="csv-format">
+                            pytanie;odpowiedz1;odpowiedz2;odpowiedz3;odpowiedz4;poprawna;notatka_pytania;notatka1;notatka2;notatka3;notatka4<br>
+                            Ile to 2+2?;2;3;4;5;3;Proste dodawanie;Zbyt mało;Blisko!;Poprawna odpowiedź!;Za dużo<br>
+                            Stolica Polski?;Kraków;Warszawa;Gdańsk;Poznań;2;;Dawna stolica;Tak!;Port morski;
+                        </code>
+                        <p class="csv-hint">
+                            <strong>Uwaga:</strong> Separator to średnik (;). 
+                            Kolumna "poprawna" zawiera numer poprawnej odpowiedzi (1-4).
+                            Dla wielokrotnego wyboru możesz podać kilka numerów oddzielonych przecinkiem (np. 1,3).<br>
+                            <strong>Notatki (opcjonalne):</strong> Możesz dodać notatki do pytania i każdej odpowiedzi. Zostaw puste jeśli nie chcesz notatki.<br>
+                            <strong>Markdown:</strong> Notatki obsługują formatowanie Markdown (**pogrubienie**, *kursywa*, `kod`, listy itp.)<br>
+                            <strong>Matematyka:</strong> Użyj <code>$wzor$</code> dla inline lub <code>\[wzor\]</code> dla bloku (LaTeX/KaTeX)
+                        </p>
+                        <button id="download-template" class="btn btn-secondary">
+                            📥 Pobierz szablon CSV
+                        </button>
+                    </div>
+
+                    <div class="import-tabs">
+                        <button class="import-tab active" data-import="file">📁 Wczytaj plik</button>
+                        <button class="import-tab" data-import="paste">📋 Wklej tekst</button>
+                    </div>
+
+                    <div id="import-file" class="import-content active">
+                        <div class="file-upload">
+                            <input type="file" id="csv-file" accept=".csv">
+                            <label for="csv-file" class="file-label">
+                                <span class="file-icon">📁</span>
+                                <span class="file-text">Wybierz plik CSV lub przeciągnij tutaj</span>
+                            </label>
+                            <div id="file-name" class="file-name"></div>
+                        </div>
+                    </div>
+
+                    <div id="import-paste" class="import-content">
+                        <div class="form-group">
+                            <label for="csv-textarea">Wklej zawartość CSV:</label>
+                            <textarea id="csv-textarea" rows="8" placeholder="pytanie;odpowiedz1;odpowiedz2;odpowiedz3;odpowiedz4;poprawna;notatka_pytania;notatka1;notatka2;notatka3;notatka4
+Ile to 2+2?;2;3;4;5;3;Proste dodawanie;Zbyt mało;Blisko!;Poprawna!;Za dużo
+Stolica Polski?;Kraków;Warszawa;Gdańsk;Poznań;2;;Dawna stolica;Tak!;;"></textarea>
+                        </div>
+                        <button id="parse-csv-text" class="btn btn-primary">
+                            📥 Importuj z tekstu
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2>Podgląd pytań</h2>
+                    <div id="questions-preview" class="questions-preview">
+                        <p class="empty-state">Zaimportuj plik CSV, aby zobaczyć pytania</p>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="save-test" class="btn btn-primary" disabled>
+                        💾 Zapisz test
+                    </button>
+                    <button id="clear-form" class="btn btn-secondary">
+                        🗑️ Wyczyść
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sekcja: Testy -->
+            <section id="tests" class="tab-content">
+                <div class="section-header">
+                    <h1>Twoje testy</h1>
+                    <p>Wybierz test do rozwiązania</p>
+                </div>
+
+                <div id="tests-list" class="tests-list">
+                    <p class="empty-state">Nie masz jeszcze żadnych testów. Dodaj pierwszy test!</p>
+                </div>
+            </section>
+
+            <!-- Sekcja: Wyniki -->
+            <section id="results" class="tab-content">
+                <div class="section-header">
+                    <h1>Historia wyników</h1>
+                    <p>Przegląd Twoich wyników z testów</p>
+                </div>
+
+                <div id="results-list" class="results-list">
+                    <p class="empty-state">Brak wyników. Rozwiąż test, aby zobaczyć wyniki!</p>
+                </div>
+            </section>
+
+            <!-- Ekran rozwiązywania testu -->
+            <section id="quiz-screen" class="tab-content quiz-screen">
+                <div class="quiz-header">
+                    <h2 id="quiz-title">Nazwa testu</h2>
+                    <div class="quiz-progress">
+                        <span id="quiz-progress-text">Pytanie 1 z 10</span>
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                    </div>
+                    <button id="quit-quiz" class="btn btn-danger btn-small">✕ Zakończ</button>
+                </div>
+
+                <div class="quiz-content">
+                    <div class="question-card">
+                        <div class="question-header-row">
+                            <div class="question-number" id="question-number">1</div>
+                            <button class="edit-question-btn" onclick="openEditQuestionModal()" title="Edytuj pytanie">
+                                ✏️ Edytuj
+                            </button>
+                        </div>
+                        <h3 id="question-text" class="question-text">Treść pytania</h3>
+                        <div class="question-notes">
+                            <button class="note-toggle-btn" onclick="toggleQuestionNote()" title="Pokaż/ukryj notatkę">
+                                📝 Notatka
+                            </button>
+                            <button class="note-edit-btn" onclick="editQuestionNote()" title="Edytuj notatkę">
+                                ✏️
+                            </button>
+                        </div>
+                        <div id="question-note" class="note-content hidden"></div>
+                    </div>
+
+                    <div id="answers-list" class="answers-list">
+                        <!-- Odpowiedzi będą generowane dynamicznie -->
+                    </div>
+                </div>
+
+                <div class="quiz-actions">
+                    <button id="prev-question" class="btn btn-secondary" disabled>
+                        ← Poprzednie
+                    </button>
+                    <button id="next-question" class="btn btn-primary">
+                        Dalej →
+                    </button>
+                </div>
+            </section>
+
+            <!-- Ekran wyniku testu -->
+            <section id="result-screen" class="tab-content result-screen">
+                <div class="result-card">
+                    <div class="result-icon" id="result-icon">🎉</div>
+                    <h1 id="result-title">Gratulacje!</h1>
+                    <div class="result-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="result-score">8/10</span>
+                            <span class="stat-label">Punkty</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="result-percentage">80%</span>
+                            <span class="stat-label">Wynik</span>
+                        </div>
+                    </div>
+                    <div class="result-message" id="result-message">
+                        Świetna robota! Tak trzymaj!
+                    </div>
+                    <div class="result-actions">
+                        <button id="show-answers-review" class="btn btn-primary">🔍 Podgląd odpowiedzi</button>
+                        <button id="retry-test" class="btn btn-secondary">🔄 Spróbuj ponownie</button>
+                        <button id="back-to-tests" class="btn btn-secondary">📋 Wróć do testów</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ekran podglądu odpowiedzi -->
+            <section id="review-screen" class="tab-content review-screen">
+                <div class="review-header">
+                    <h1 id="review-title">Podgląd odpowiedzi</h1>
+                    <div class="review-summary">
+                        <span class="review-stat correct">✅ Poprawne: <strong id="review-correct">0</strong></span>
+                        <span class="review-stat incorrect">❌ Błędne: <strong id="review-incorrect">0</strong></span>
+                    </div>
+                    <div class="review-header-actions">
+                        <button id="close-review" class="btn btn-secondary">← Wróć</button>
+                    </div>
+                </div>
+                <div id="review-list" class="review-list">
+                    <!-- Lista pytań i odpowiedzi -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
