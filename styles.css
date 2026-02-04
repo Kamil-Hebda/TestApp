@@ -148,6 +148,15 @@ body {
     margin-bottom: 1rem;
 }
 
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
@@ -163,6 +172,10 @@ body {
     border-radius: var(--radius-sm);
     font-size: 1rem;
     transition: border-color 0.3s ease;
+}
+
+.form-group input[type="number"] {
+    width: 100%;
 }
 
 .form-group input:focus,

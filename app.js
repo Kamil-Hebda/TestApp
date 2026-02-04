@@ -138,6 +138,44 @@ function parseCSV(content) {
     const lines = content.trim().split('\n');
     const questions = [];
     
+    if (lines.length < 2) {
+        alert('Plik CSV musi zawierać nagłówek i co najmniej jedno pytanie!');
+        return;
+    }
+    
+    // Parsuj nagłówek, żeby wykryć liczbę odpowiedzi
+    const headerLine = lines[0].trim();
+    let headerParts;
+    if (headerLine.includes(';')) {
+        headerParts = headerLine.split(';');
+    } else {
+        headerParts = parseCSVLine(headerLine);
+    }
+    
+    // Znajdź indeks kolumny "poprawna" w nagłówku
+    let correctColumnIndex = -1;
+    for (let i = 0; i < headerParts.length; i++) {
+        const col = headerParts[i].trim().toLowerCase();
+        if (col === 'poprawna' || col === 'correct' || col === 'prawidlowa') {
+            correctColumnIndex = i;
+            break;
+        }
+    }
+    
+    // Jeśli nie znaleziono kolumny "poprawna", użyj wartości z formularza
+    let answersCount;
+    if (correctColumnIndex > 0) {
+        answersCount = correctColumnIndex - 1; // Liczba odpowiedzi = indeks "poprawna" - 1 (bo pytanie jest na pozycji 0)
+    } else {
+        answersCount = parseInt(document.getElementById('answers-count').value) || 4;
+        correctColumnIndex = answersCount + 1;
+    }
+    
+    // Zaktualizuj pole formularza
+    document.getElementById('answers-count').value = answersCount;
+    
+    console.log(`Wykryto ${answersCount} odpowiedzi, kolumna "poprawna" na indeksie ${correctColumnIndex}`);
+    
     // Pomijamy pierwszy wiersz (nagłówek)
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -151,25 +189,37 @@ function parseCSV(content) {
             parts = parseCSVLine(line);
         }
         
-        if (parts.length >= 6) {
+        // Minimalna liczba kolumn: pytanie + odpowiedzi + poprawna
+        const minColumns = 1 + answersCount + 1;
+        
+        if (parts.length >= minColumns) {
+            // Zbierz odpowiedzi (od indeksu 1 do answersCount)
+            const answers = [];
+            for (let j = 1; j <= answersCount; j++) {
+                if (parts[j] && parts[j].trim()) {
+                    answers.push(parts[j].trim());
+                }
+            }
+            
+            // Indeks kolumny z poprawną odpowiedzią
+            const correctIdx = correctColumnIndex;
+            
+            // Zbierz notatki (jeśli są)
+            const questionNoteIndex = correctColumnIndex + 1;
+            const answerNotes = [];
+            for (let j = 0; j < answersCount; j++) {
+                const noteIndex = questionNoteIndex + 1 + j;
+                answerNotes.push(parts[noteIndex] ? parts[noteIndex].trim() : '');
+            }
+            
             const question = {
                 id: Date.now() + i,
                 text: parts[0].trim(),
-                answers: [
-                    parts[1].trim(),
-                    parts[2].trim(),
-                    parts[3].trim(),
-                    parts[4].trim()
-                ].filter(a => a), // Usuń puste odpowiedzi
-                correct: parts[5].trim().split(',').map(n => parseInt(n.trim()) - 1),
+                answers: answers,
+                correct: parts[correctIdx] ? parts[correctIdx].trim().split(',').map(n => parseInt(n.trim()) - 1) : [0],
                 // Notatki z CSV (opcjonalne)
-                questionNote: parts[6] ? parts[6].trim() : '',
-                answerNotes: [
-                    parts[7] ? parts[7].trim() : '',
-                    parts[8] ? parts[8].trim() : '',
-                    parts[9] ? parts[9].trim() : '',
-                    parts[10] ? parts[10].trim() : ''
-                ]
+                questionNote: parts[questionNoteIndex] ? parts[questionNoteIndex].trim() : '',
+                answerNotes: answerNotes
             };
             questions.push(question);
         }
@@ -213,7 +263,11 @@ function renderQuestionsPreview(questions) {
         return;
     }
     
+    console.log('Podgląd pytań:', questions);
+    
     preview.innerHTML = questions.map((q, index) => {
+        console.log(`Pytanie ${index + 1}: ${q.answers.length} odpowiedzi`, q.answers);
+        
         const answersHtml = q.answers.map((a, i) => {
             const isCorrect = q.correct.includes(i);
             const hasNote = q.answerNotes && q.answerNotes[i];
@@ -234,6 +288,7 @@ function renderQuestionsPreview(questions) {
 function saveTest() {
     const testName = document.getElementById('test-name').value.trim();
     const testType = document.getElementById('test-type').value;
+    const answersCount = parseInt(document.getElementById('answers-count').value) || 4;
     
     if (!testName) {
         alert('Podaj nazwę testu!');
@@ -249,6 +304,7 @@ function saveTest() {
         id: Date.now(),
         name: testName,
         type: testType,
+        answersCount: answersCount,
         questions: AppState.importedQuestions,
         createdAt: new Date().toISOString()
     };
@@ -265,6 +321,7 @@ function saveTest() {
 function clearForm() {
     document.getElementById('test-name').value = '';
     document.getElementById('test-type').value = 'single';
+    document.getElementById('answers-count').value = '4';
     document.getElementById('csv-file').value = '';
     document.getElementById('file-name').textContent = '';
     document.getElementById('csv-textarea').value = '';
@@ -275,12 +332,47 @@ function clearForm() {
 }
 
 function downloadCSVTemplate() {
-    const template = `pytanie;odpowiedz1;odpowiedz2;odpowiedz3;odpowiedz4;poprawna;notatka_pytania;notatka1;notatka2;notatka3;notatka4
-Ile to 2+2?;2;3;4;5;3;Podstawowe działanie matematyczne;Za mało;Prawie!;Brawo, to poprawna odpowiedź!;Za dużo
-Stolica Polski to?;Kraków;Warszawa;Gdańsk;Poznań;2;Pytanie o geografię;Dawna stolica;Obecna stolica Polski;Miasto portowe;Miasto w Wielkopolsce
-Który język programowania jest obiektowy?;HTML;CSS;JavaScript;SQL;3;;To język znaczników;To język stylów;Tak! JS jest obiektowy;To język zapytań
-W którym roku odbyła się bitwa pod Grunwaldem?;1410;1420;1400;1510;1;Ważna data w historii Polski;Poprawna data!;;;
-Który pierwiastek ma symbol "Fe"?;Fluor;Fosfor;Żelazo;Francium;3;Z łaciny: Ferrum;;;;Żelazo - po łacinie Ferrum`;
+    // Pobierz liczbę odpowiedzi z formularza
+    const answersCount = parseInt(document.getElementById('answers-count').value) || 4;
+    
+    // Generuj nagłówek dynamicznie
+    let header = 'pytanie';
+    for (let i = 1; i <= answersCount; i++) {
+        header += `;odpowiedz${i}`;
+    }
+    header += ';poprawna;notatka_pytania';
+    for (let i = 1; i <= answersCount; i++) {
+        header += `;notatka${i}`;
+    }
+    
+    // Generuj przykładowe wiersze
+    const examples = [];
+    
+    // Przykład 1
+    let ex1 = 'Ile to 2+2?';
+    const ans1 = ['2', '3', '4', '5', '6', '7', '8', '9', '10', '11'];
+    for (let i = 0; i < answersCount; i++) {
+        ex1 += `;${ans1[i] || ''}`;
+    }
+    ex1 += ';3;Podstawowe działanie';
+    for (let i = 0; i < answersCount; i++) {
+        ex1 += `;${i === 2 ? 'Poprawna!' : ''}`;
+    }
+    examples.push(ex1);
+    
+    // Przykład 2
+    let ex2 = 'Stolica Polski to?';
+    const ans2 = ['Kraków', 'Warszawa', 'Gdańsk', 'Poznań', 'Wrocław', 'Łódź', 'Lublin', 'Katowice', 'Szczecin', 'Bydgoszcz'];
+    for (let i = 0; i < answersCount; i++) {
+        ex2 += `;${ans2[i] || ''}`;
+    }
+    ex2 += ';2;Pytanie o geografię';
+    for (let i = 0; i < answersCount; i++) {
+        ex2 += `;${i === 1 ? 'Obecna stolica!' : ''}`;
+    }
+    examples.push(ex2);
+    
+    const template = header + '\n' + examples.join('\n');
     
     const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -359,7 +451,8 @@ function renderTestsList() {
                     <div class="test-meta">
                         <span>📝 ${test.questions.length} pytań</span>
                         <span>📋 ${typeLabel}</span>
-                        <span>📅 ${date}</span>
+                        <span>� ${test.answersCount || 4} odp.</span>
+                        <span>�📅 ${date}</span>
                     </div>
                     ${sessionInfo}
                 </div>
@@ -1293,8 +1386,9 @@ function parseMarkdown(text) {
 }
 
 // Renderowanie KaTeX na elemencie
-function renderMathInElement(element) {
-    if (typeof renderMathInElement !== 'undefined' && typeof katex !== 'undefined') {
+function renderKaTeXInElement(element) {
+    // Sprawdź czy KaTeX auto-render jest załadowany
+    if (typeof window.renderMathInElement === 'function' && typeof katex !== 'undefined') {
         try {
             window.renderMathInElement(element, {
                 delimiters: [
@@ -1317,12 +1411,12 @@ function renderAllMath() {
     // Renderuj matematykę w notatkach pytań
     const questionNote = document.getElementById('question-note');
     if (questionNote) {
-        renderMathInElement(questionNote);
+        renderKaTeXInElement(questionNote);
     }
     
     // Renderuj matematykę w notatkach odpowiedzi
     document.querySelectorAll('.answer-note').forEach(note => {
-        renderMathInElement(note);
+        renderKaTeXInElement(note);
     });
 }
 

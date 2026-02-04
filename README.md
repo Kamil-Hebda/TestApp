@@ -11,6 +11,8 @@ TestApp to prosta aplikacja webowa do tworzenia, zarządzania i rozwiązywania t
 
 ### Metoda 2: Serwer lokalny (zalecane)
 ```bash
+cd TestApp
+
 # Python 3
 python -m http.server 8000
 

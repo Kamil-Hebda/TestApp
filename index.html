@@ -53,12 +53,18 @@
                         <label for="test-name">Nazwa testu</label>
                         <input type="text" id="test-name" placeholder="np. Test z matematyki">
                     </div>
-                    <div class="form-group">
-                        <label for="test-type">Typ testu</label>
-                        <select id="test-type">
-                            <option value="single">Jednokrotny wybór</option>
-                            <option value="multiple">Wielokrotny wybór</option>
-                        </select>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="test-type">Typ testu</label>
+                            <select id="test-type">
+                                <option value="single">Jednokrotny wybór</option>
+                                <option value="multiple">Wielokrotny wybór</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="answers-count">Liczba odpowiedzi</label>
+                            <input type="number" id="answers-count" min="2" max="10" value="4" placeholder="2-10">
+                        </div>
                     </div>
                 </div>
 
@@ -67,16 +73,16 @@
                     <div class="csv-info">
                         <h3>Wymagany format CSV:</h3>
                         <code class="csv-format">
-                            pytanie;odpowiedz1;odpowiedz2;odpowiedz3;odpowiedz4;poprawna;notatka_pytania;notatka1;notatka2;notatka3;notatka4<br>
-                            Ile to 2+2?;2;3;4;5;3;Proste dodawanie;Zbyt mało;Blisko!;Poprawna odpowiedź!;Za dużo<br>
-                            Stolica Polski?;Kraków;Warszawa;Gdańsk;Poznań;2;;Dawna stolica;Tak!;Port morski;
+                            pytanie;odpowiedz1;odpowiedz2;...;odpowiedzN;poprawna;notatka_pytania;notatka1;notatka2;...<br>
+                            Ile to 2+2?;2;3;4;5;3;Proste dodawanie;Zbyt mało;Blisko!;Poprawna!;Za dużo<br>
+                            Stolica Polski?;Kraków;Warszawa;Gdańsk;Poznań;2;;Dawna stolica;Tak!;Port;Miasto
                         </code>
                         <p class="csv-hint">
-                            <strong>Uwaga:</strong> Separator to średnik (;). 
-                            Kolumna "poprawna" zawiera numer poprawnej odpowiedzi (1-4).
-                            Dla wielokrotnego wyboru możesz podać kilka numerów oddzielonych przecinkiem (np. 1,3).<br>
-                            <strong>Notatki (opcjonalne):</strong> Możesz dodać notatki do pytania i każdej odpowiedzi. Zostaw puste jeśli nie chcesz notatki.<br>
-                            <strong>Markdown:</strong> Notatki obsługują formatowanie Markdown (**pogrubienie**, *kursywa*, `kod`, listy itp.)<br>
+                            <strong>Uwaga:</strong> Separator to średnik (;). Liczba odpowiedzi jest dowolna (ustaw powyżej).<br>
+                            Kolumna "poprawna" zawiera numer poprawnej odpowiedzi.
+                            Dla wielokrotnego wyboru podaj numery oddzielone przecinkiem (np. 1,3).<br>
+                            <strong>Notatki (opcjonalne):</strong> Możesz dodać notatki do pytania i każdej odpowiedzi.<br>
+                            <strong>Markdown:</strong> Notatki obsługują **pogrubienie**, *kursywa*, `kod`, listy itp.<br>
                             <strong>Matematyka:</strong> Użyj <code>$wzor$</code> dla inline lub <code>\[wzor\]</code> dla bloku (LaTeX/KaTeX)
                         </p>
                         <button id="download-template" class="btn btn-secondary">
